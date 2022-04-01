@@ -111,7 +111,7 @@ int main(int argc, char** argv) {
     static struct option long_options[] = {
         {.name = "help", .has_arg = no_argument, .flag = &help_flag, .val = 0},
         {.name = "set", .has_arg = required_argument, .flag = &set_flag, .val = 0},
-        {.name = "flag", .has_arg = required_argument, .flag = &set_flag, .val = 0}
+        {.name = "path", .has_arg = required_argument, .flag = &path_flag, .val = 0}
     };
 
     int c;
