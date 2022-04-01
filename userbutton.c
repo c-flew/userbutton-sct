@@ -66,7 +66,7 @@ static int handler(void* user, const char* section, const char* name, const char
     if (strcmp(section, prev_section)) {
         char output[128] = "";
         sprintf(output, "%s[%s]\n", (prev_section[0] ? "\n" : ""), section);
-
+        sprintf(newbuf + strlen(newbuf), output);
         strncpy(prev_section, section, sizeof(prev_section));
         prev_section[sizeof(prev_section) - 1] = '\0';
     }
@@ -107,15 +107,17 @@ int main(int argc, char** argv) {
 
     static int help_flag;
     static int set_flag;
+    static int path_flag;
     static struct option long_options[] = {
         {.name = "help", .has_arg = no_argument, .flag = &help_flag, .val = 0},
-        {.name = "set", .has_arg = required_argument, .flag = &set_flag, .val = 0}
+        {.name = "set", .has_arg = required_argument, .flag = &set_flag, .val = 0},
+        {.name = "flag", .has_arg = required_argument, .flag = &set_flag, .val = 0}
     };
 
     int c;
     int option_index;
     while (1) {
-        c = getopt_long(argc, argv, "hs", long_options, &option_index);
+        c = getopt_long(argc, argv, "hsp", long_options, &option_index);
 
         if (c == -1) break;
 
@@ -127,6 +129,9 @@ int main(int argc, char** argv) {
                 break;
             case 's':
                 set_flag = 1;
+                break;
+            case 'p':
+                path_flag = 1;
                 break;
             case '?':
                 break;
@@ -147,6 +152,14 @@ int main(int argc, char** argv) {
             return 0;
         }
         user_conf.launch_at_boot = atob(argv[optind]);
+    }
+
+    if (path_flag) {
+        if (argc - optind != 1) {
+            print_usage();
+            return 0;
+        }
+        filepath = argv[optind];
     }
 
     struct stat st;
