@@ -16,26 +16,26 @@
 #endif
 
 #ifndef SYS_renameat2
-#if defined(__x86_64__)
-#define SYS_renameat2 314 // from arch/x86/syscalls/syscall_64.tbl
-#elif defined(__i386__)
-#define SYS_renameat2 353 // from arch/x86/syscalls/syscall_32.tbl
-#endif
+    #if defined(__x86_64__)
+        #define SYS_renameat2 314 // from arch/x86/syscalls/syscall_64.tbl
+    #elif defined(__i386__)
+        #define SYS_renameat2 353 // from arch/x86/syscalls/syscall_32.tbl
+    #endif
 #endif
 
 int swap_names(int first_fd, const char *first_path, int second_fd, const char *second_path) {
 #if defined(__NR_renameat2)
     return renameat2(first_fd, first_path, second_fd, second_path, RENAME_EXCHANGE);
-#elif defined(syscall)
+#elif defined(syscall) && defined(SYS_renameat2)
     return syscall(SYS_renameat2, first_fd, first_path, second_fd, second_path, RENAME_EXCHANGE);
 #else
     // TODO make this an atomic operation
-    char temp_name[7] = "XXXXXX";
-    if (!mktemp(temp_name)) return -1;
+    char tmp_name[6] = "XXXXXX";
+    if (mktemp(tmp_name) == -1) return -1;
     int err;
-    if ((err = renameat(first_fd, first_path, first_fd, temp_name)) != 0) return err;
+    if ((err = renameat(first_fd, first_path, first_fd, tmp_name)) != 0) return err;
     if ((err = renameat(second_fd, second_path, first_fd, first_path)) != 0) return err;
-    if ((err = renameat(first_fd, temp_name, second_fd, second_path)) != 0) return err;
+    if ((err = renameat(first_fd, tmp_name, second_fd, second_path)) != 0) return err;
     return 0;
 #endif
 }
@@ -58,8 +58,6 @@ static char* newbuf;
 
 static int handler(void* user, const char* section, const char* name, const char* value) {
     config* pconfig = (config*)user;
-
-
 
     static char prev_section[50] = "";
 
@@ -101,9 +99,6 @@ void print_usage() {
 
 int main(int argc, char** argv) {
     const char* filepath = "test.ini";
-    const char* tmppath = "tmp.conf";
-
-
 
     static int help_flag;
     static int set_flag;
@@ -184,14 +179,22 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    FILE* tmp = fopen(tmppath, "w");
+    char tmp_name[7] = "XXXXXX";
+    int fd = mkstemp(tmp_name);
+    if (fd == -1) {
+        printf("Error could not make tmp file");
+        return -1;
+    }
+
+    FILE* tmp = fdopen(fd, "w");
 
     printf(newbuf);
     fprintf(tmp, newbuf, strlen(newbuf));
 
-    swap_names(AT_FDCWD, filepath, AT_FDCWD, tmppath);
+    swap_names(AT_FDCWD, filepath, AT_FDCWD, tmp_name);
 
     fclose(tmp);
+    remove(tmp_name);
 }
 
 #undef btoa
