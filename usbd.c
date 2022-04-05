@@ -2,15 +2,15 @@
 #include <usb.h>
 #include <stdbool.h>
 
-static const int usb_num = 6;
 
 int main() {
+    struct usb_bus *bus;
+    struct usb_device *dev;
+    usb_init();
+
     int count = 0;
-    bool prev = false;
+    int prev_count = -1;
     while (true) {
-        struct usb_bus *bus;
-        struct usb_device *dev;
-        usb_init();
         usb_find_busses();
         usb_find_devices();
         for (bus = usb_busses; bus; bus = bus->next) {
@@ -22,22 +22,23 @@ int main() {
             }
         }
         /* printf("%d\n", count); */
-        if (count > usb_num && !prev) {
+        /* printf("%d\n", prev_count); */
+        if (prev_count != -1 && count > prev_count) {
             printf("usb device plugged in\n");
             printf("running: sct -s t\n");
             printf("------------\n");
 
             system("./sct -s t");
             printf("\n");
-
-            prev = true;
         }
 
+        prev_count = count;
         count = 0;
-        sleep(1);
 
         // There is probably a better way to do this
         usb_busses = NULL;
+
+        sleep(1);
     }
 
     return 0;
