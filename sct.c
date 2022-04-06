@@ -25,7 +25,8 @@
 
 int swap_names(int first_fd, const char *first_path, int second_fd, const char *second_path) {
 #if defined(__NR_renameat2)
-    return renameat2(first_fd, first_path, second_fd, second_path, RENAME_EXCHANGE);
+    /* return renameat2(first_fd, first_path, second_fd, second_path, RENAME_EXCHANGE); */
+    return syscall(SYS_renameat2, first_fd, first_path, second_fd, second_path, RENAME_EXCHANGE);
 #elif defined(syscall) && defined(SYS_renameat2)
     return syscall(SYS_renameat2, first_fd, first_path, second_fd, second_path, RENAME_EXCHANGE);
 #else
@@ -62,7 +63,7 @@ static int handler(void* user, const char* section, const char* name, const char
     static char prev_section[50] = "";
 
     if (strcmp(section, prev_section)) {
-        char output[128] = "";
+        char output[1024] = "";
         sprintf(output, "%s[%s]\n", (prev_section[0] ? "\n" : ""), section);
         sprintf(newbuf + strlen(newbuf), output);
         strncpy(prev_section, section, sizeof(prev_section));
@@ -74,10 +75,12 @@ static int handler(void* user, const char* section, const char* name, const char
     bool found = false;
     if (MATCH(section, "LVRT")) {
         if (MATCH(name, "RTTarget.LaunchAppAtBoot")) {
+            printf("matched?");
             found = true;
-            pconfig->launch_at_boot = strcmp(value, "\"True\"") == 0;
+            pconfig->launch_at_boot = strcmp(value, "True") == 0;
 
-            sprintf(newbuf + strlen(newbuf), "%s %s", "RTTarget.LaunchAppAtBoot =", (pconfig->launch_at_boot) ? "\"False\"" : "\"True\"");
+            sprintf(newbuf + strlen(newbuf), "%s%s", "RTTarget.LaunchAppAtBoot=", (pconfig->launch_at_boot) ? "False\n" : "True\n");
+            printf("%s%s", "RTTarget.LaunchAppAtBoot=", (pconfig->launch_at_boot) ? "False\n" : "True\n");
         }
     }
 
@@ -85,8 +88,8 @@ static int handler(void* user, const char* section, const char* name, const char
     #undef MATCH
 
     if (!found) {
-        char output[128] = "";
-        sprintf(output, "%s = %s\n", name, value);
+        char output[1024] = "";
+        sprintf(output, "%s=%s\n", name, value);
         sprintf(newbuf + strlen(newbuf), output);
     }
 
