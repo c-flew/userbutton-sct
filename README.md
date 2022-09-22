@@ -19,5 +19,5 @@ First of all, don't, but if you are not detered by my warning you first must cha
 ```c
 const char* filepath = "test.ini";
 ```
-I would do it myself, but I can not recall off the top of my head, and I do not have a roborio on me to check. There is probably some documentation page that says
+I would do it myself, but I can not recall the correct path off the top of my head, and I do not have a roborio on me to check. There is probably some documentation page that says
 where the relevant ini file is, but I can not be bothered for a project that will likely stay abandoned.
